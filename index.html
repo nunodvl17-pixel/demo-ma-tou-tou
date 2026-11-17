@@ -74,7 +74,7 @@
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* ---------- La visite filmée, derrière tout le site ---------- */
-  #world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; opacity: 0; transition: opacity 1.2s ease; background: #F4F0EA; }
+  #world { position: fixed; top: 0; left: 0; right: 0; width: 100%; height: 100vh; height: 100lvh; display: block; z-index: 0; opacity: 0; transition: opacity 1.2s ease; background: #F4F0EA; }
   /* voile clair en haut de l'accueil, pour lire le titre sur la devanture */
   .js #note .stick, .js .ch-final .stick { background: radial-gradient(ellipse 70% 50% at 50% 30%, rgba(247,244,239,.82) 0%, rgba(247,244,239,.5) 45%, rgba(247,244,239,0) 75%); }
   .js .ch-hero .stick { background: linear-gradient(to bottom, rgba(247,244,239,.96) 0%, rgba(247,244,239,.86) 42%, rgba(247,244,239,0) 70%); }
@@ -724,12 +724,18 @@
     for (var k = 0; k < 6; k++) pump();
     function nearest(i) { for (var d = 0; d < N; d++) { if (imgs[i - d]) return imgs[i - d]; if (imgs[i + d]) return imgs[i + d]; } return null; }
 
-    var cw = 0, ch = 0;
+    var cw = 0, ch = 0, lastIdx = 0, lastVeil = 0;
+    // Le canvas a la hauteur du plus grand écran (100lvh) : la barre d'adresse du téléphone qui se replie
+    // ne le redimensionne plus. Et s'il change vraiment de taille, on repeint tout de suite :
+    // redimensionner un canvas l'efface, ce qui donnait des flashs blancs au défilement.
     function resize() {
       var dpr = Math.min(window.devicePixelRatio || 1, 2), r = canvas.getBoundingClientRect();
       var s = Math.min(dpr, Math.max(1, m.width / r.width, m.height / r.height));
-      cw = canvas.width = Math.round(r.width * s); ch = canvas.height = Math.round(r.height * s);
-      ctx.imageSmoothingQuality = 'high'; dirty = true;
+      var w = Math.round(r.width * s), h = Math.round(r.height * s);
+      if (w === cw && h === ch) return;
+      cw = canvas.width = w; ch = canvas.height = h;
+      ctx.imageSmoothingQuality = 'high';
+      if (!paint(lastIdx, lastVeil)) dirty = true;
     }
     new ResizeObserver(resize).observe(canvas);
 
@@ -761,6 +767,7 @@
         var k = Math.floor((now - t0) / 1000 * FPS * 0.6) % (2 * LOOP);        // aller-retour, un peu ralenti
         idx = N - 1 - (k < LOOP ? k : 2 * LOOP - k);
       }
+      lastIdx = idx; lastVeil = veil;
       var key = idx + ':' + veil.toFixed(3);
       if (key !== shown || dirty) {
         if (paint(idx, veil)) { shown = key; dirty = false; if (first) { first = false; canvas.classList.add('ready'); } }
